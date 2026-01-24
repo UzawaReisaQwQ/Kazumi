@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
+import 'package:kazumi/modules/comments/comment_item.dart';
 import 'package:kazumi/bean/card/episode_comments_card.dart';
 import 'package:kazumi/pages/video/video_controller.dart';
 
@@ -60,10 +61,10 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
     if (mounted) {
       if (isAscending) {
         videoPageController.episodeCommentsList.sort(
-            (a, b) => a.timestamp.compareTo(b.timestamp));
+            (a, b) => a.comment.createdAt.compareTo(b.comment.createdAt));
       } else {
         videoPageController.episodeCommentsList.sort(
-            (a, b) => b.timestamp.compareTo(a.timestamp));
+            (a, b) => b.comment.createdAt.compareTo(a.comment.createdAt));
       }
       setState(() {});
     }
@@ -72,13 +73,12 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
   void toggleSortOrder() {
     setState(() {
       isAscending = !isAscending;
+      videoPageController.episodeCommentsList.sort(
+        (a, b) => isAscending
+            ? a.comment.createdAt.compareTo(b.comment.createdAt)
+            : b.comment.createdAt.compareTo(a.comment.createdAt),
+      );
     });
-    // refresh comments
-    final int episode = ep == 0
-        ? EpisodeInfo.of(context)?.episode ?? 1
-        : ep;
-    _refreshIndicatorKey.currentState?.show();
-    loadComments(episode);
   }
 
   @override
