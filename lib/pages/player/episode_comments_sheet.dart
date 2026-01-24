@@ -39,6 +39,8 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
   /// episode input by [showEpisodeSelection]
   int ep = 0;
 
+  bool isAscending = true;
+
   @override
   void initState() {
     super.initState();
@@ -56,8 +58,27 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
       }
     });
     if (mounted) {
+      if (isAscending) {
+        videoPageController.episodeCommentsList.sort(
+            (a, b) => a.timestamp.compareTo(b.timestamp));
+      } else {
+        videoPageController.episodeCommentsList.sort(
+            (a, b) => b.timestamp.compareTo(a.timestamp));
+      }
       setState(() {});
     }
+  }
+
+  void toggleSortOrder() {
+    setState(() {
+      isAscending = !isAscending;
+    });
+    // refresh comments
+    final int episode = ep == 0
+        ? EpisodeInfo.of(context)?.episode ?? 1
+        : ep;
+    _refreshIndicatorKey.currentState?.show();
+    loadComments(episode);
   }
 
   @override
@@ -175,6 +196,20 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
                 style: TextStyle(fontSize: 13),
               ),
             ),
+          ),
+          SizedBox(
+              height: 34,
+              child: TextButton(
+                style: ButtonStyle(
+                  padding: MaterialStateProperty.all(
+                      const EdgeInsets.symmetric(horizontal: 4.0)),
+                ),
+                onPressed: toggleSortOrder,
+                child: Text(
+                  isAscending ? '正序' : '倒序',
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
           ),
         ],
       ),
