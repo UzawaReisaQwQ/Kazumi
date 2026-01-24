@@ -199,7 +199,7 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
                 ),
                 onPressed: toggleSortOrder,
                 child: Text(
-                  isAscending ? '正序' : '倒序',
+                  isAscending ? '倒序' : '正序',
                   style: const TextStyle(fontSize: 13),
                 ),
               ),
