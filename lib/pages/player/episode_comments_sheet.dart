@@ -40,7 +40,7 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
   /// episode input by [showEpisodeSelection]
   int ep = 0;
 
-  bool isAscending = false;
+  bool isAscending = true;
 
   @override
   void initState() {
@@ -59,13 +59,6 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
       }
     });
     if (mounted) {
-      if (isAscending) {
-        videoPageController.episodeCommentsList.sort(
-            (a, b) => a.comment.createdAt.compareTo(b.comment.createdAt));
-      } else {
-        videoPageController.episodeCommentsList.sort(
-            (a, b) => b.comment.createdAt.compareTo(a.comment.createdAt));
-      }
       setState(() {});
     }
   }
