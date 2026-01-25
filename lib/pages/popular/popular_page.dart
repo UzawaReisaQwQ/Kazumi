@@ -182,8 +182,7 @@ class _PopularPageState extends State<PopularPage>
           // 列数
           crossAxisCount: crossCount,
           mainAxisExtent:
-              MediaQuery.of(context).size.width / crossCount / 0.65 +
-                  MediaQuery.textScalerOf(context).scale(32.0),
+              MediaQuery.of(context).size.width / crossCount / 0.65 + 32,
         ),
         delegate: SliverChildBuilderDelegate(
           (BuildContext context, int index) {
