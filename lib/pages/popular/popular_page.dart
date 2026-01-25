@@ -171,10 +171,6 @@ class _PopularPageState extends State<PopularPage>
     if (MediaQuery.sizeOf(context).width > LayoutBreakpoint.medium['width']!) {
       crossCount = 6;
     }
-
-    final width = MediaQuery.of(context).size.width;
-    final itemWidth = width / crossCount;
-    
     return SliverPadding(
       padding: const EdgeInsets.all(8),
       sliver: SliverGrid(
@@ -185,7 +181,9 @@ class _PopularPageState extends State<PopularPage>
           crossAxisSpacing: StyleString.cardSpace,
           // 列数
           crossAxisCount: crossCount,
-          mainAxisExtent: itemWidth / 0.65 + 32,
+          mainAxisExtent:
+              MediaQuery.of(context).size.width / crossCount / 0.65 +
+                  MediaQuery.textScalerOf(context).scale(32.0),
         ),
         delegate: SliverChildBuilderDelegate(
           (BuildContext context, int index) {
