@@ -77,9 +77,10 @@ class BangumiContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ts = MediaQuery.textScalerOf(context);
+    final bottomPadding = Utils.isTablet() ? 8.0 : 2.0;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(5, 3, 5, 1),
+      padding: EdgeInsets.fromLTRB(5, 3, 5, bottomPadding),
       child: Text(
         bangumiItem.nameCn,
         textAlign: TextAlign.start,
@@ -88,6 +89,12 @@ class BangumiContent extends StatelessWidget {
           letterSpacing: 0.3,
           height: 1.2,
         ),
+        strutStyle: const StrutStyle(
+          forceStrutHeight: true,
+          height: 1.2,
+        ),
+        textHeightBehavior:
+            const TextHeightBehavior(applyHeightToFirstAscent: true, applyHeightToLastDescent: true),
         textScaler: ts.clamp(maxScaleFactor: 1.1),
         maxLines: Utils.isDesktop() || Utils.isTablet() ? 3 : 2,
         overflow: TextOverflow.ellipsis,
@@ -95,3 +102,4 @@ class BangumiContent extends StatelessWidget {
     );
   }
 }
+
