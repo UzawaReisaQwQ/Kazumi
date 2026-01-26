@@ -16,6 +16,7 @@ import 'package:kazumi/utils/constants.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:kazumi/utils/storage.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
+import 'package:kazumi/pages/player/player_item_chat_panel.dart';
 
 class PlayerItemPanel extends StatefulWidget {
   const PlayerItemPanel({
@@ -1238,6 +1239,32 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                               child: Align(
                                 alignment: Alignment.centerLeft,
                                 child: Text("加入房间"),
+                              ),
+                            ),
+                          ),
+                          MenuItemButton(
+                            onPressed: () {
+                              showModalBottomSheet(
+                                isScrollControlled: true,
+                                context: Modular.to.navigatorKey.currentContext ?? context,
+                                clipBehavior: Clip.antiAlias,
+                                builder: (context) {
+                                  return const SyncPlayChatPanel();
+                                },
+                                constraints: BoxConstraints(
+                                  maxHeight: MediaQuery.of(context).size.height * 0.9,
+                                  maxWidth: (Utils.isDesktop() || Utils.isTablet())
+                                      ? MediaQuery.of(context).size.width * 0.45
+                                      : MediaQuery.of(context).size.width,
+                                ),
+                              );
+                            },
+                            child: Container(
+                              height: 48,
+                              constraints: const BoxConstraints(minWidth: 112),
+                              child: const Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text("聊天室"),
                               ),
                             ),
                           ),
