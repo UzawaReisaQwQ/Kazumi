@@ -1,22 +1,11 @@
 import 'package:kazumi/bbcode/bbcode_widget.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/pages/player/player_controller.dart';
 import 'package:kazumi/pages/video/video_controller.dart';
 import 'package:kazumi/utils/utils.dart';
-
-class SyncPlayChatItem {
-  final String name;
-  final String message;
-  final DateTime time;
-
-  SyncPlayChatItem({
-    required this.name,
-    required this.message,
-    required this.time,
-  });
-}
+import 'package:intl/intl.dart';
 
 class SyncPlayChatPanel extends StatefulWidget {
   const SyncPlayChatPanel({super.key});
@@ -31,22 +20,10 @@ class _SyncPlayChatPanelState extends State<SyncPlayChatPanel> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  // 本地维护的聊天历史（打开面板时尝试从 controller 取历史）
-  final List<SyncPlayChatItem> _messages = [];
-
   @override
   void initState() {
     super.initState();
-
-    for (final item in playerController.syncplayChatHistory) {
-      _messages.add(SyncPlayChatItem(
-        name: item['name']?.toString() ?? '用户',
-        message: item['message']?.toString() ?? '',
-        time: item['time'] is DateTime ? item['time'] : DateTime.now(),
-      ));
-    }
   }
-
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -64,58 +41,44 @@ class _SyncPlayChatPanelState extends State<SyncPlayChatPanel> {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
 
-    // 调用 PlayerController 提供的发送接口
     try {
       await playerController.sendSyncPlayChatMessage(text);
     } catch (e) {
-      // 若你需要错误提示可以在这里 showToast/弹窗
+      KazumiDialog.showToast(message:'SyncPlay: 消息发送失败');
     }
 
-    // 尝试取当前用户名（如果 controller 有字段请替换）
-    final name = playerController.syncplayUserName ?? '我';
-    try {
-      final dynamic maybeName = (playerController as dynamic).syncplayUserName;
-      if (maybeName is String && maybeName.isNotEmpty) name = maybeName;
-    } catch (_) {}
+    final name = playerController.syncplayController?.username ?? '我';
 
-    final newItem = SyncPlayChatItem(
-      name: name,
-      message: text,
-      time: DateTime.now(),
-    );
+    final newItem = {
+      'name': name,
+      'message': text,
+      'time': DateTime.now(),
+    };
 
     setState(() {
-      _messages.add(newItem);
+      playerController.syncplayChatHistory.add(newItem);
       _textController.clear();
-    });
-
-    // 可选：同时也可以把它推回 controller 的历史里（若你希望共享历史）
-    playerController.syncplayChatHistory.add({
-      'name': newItem.name,
-      'message': newItem.message,
-      'time': newItem.time,
     });
 
     _scrollToBottom();
   }
 
-  Widget _buildMessageItem(SyncPlayChatItem item) {
+  Widget _buildMessageItem(Map<String, dynamic> item) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 名字 - 时间 行
+          // 名字 - 时间
           Text(
-            '${item.name} - ${Utils.dateFormat(item.time)}',
+            '${item['name'] ?? '用户'} - ${item['time'] is DateTime ? DateFormat('yyyy/MM/dd HH:mm:ss').format(item['time']) : ''}',
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurface.withAlpha(200),
               fontSize: 13,
             ),
           ),
           const SizedBox(height: 6),
-          // 内容（使用 BBCodeWidget 以与评论样式一致）
-          BBCodeWidget(bbcode: item.message),
+          BBCodeWidget(bbcode: item['message'] ?? ''),
         ],
       ),
     );
@@ -137,7 +100,6 @@ class _SyncPlayChatPanelState extends State<SyncPlayChatPanel> {
             color: Theme.of(context).colorScheme.surface,
             child: Column(
               children: [
-                // 顶部标题栏
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
                   child: Row(
@@ -158,7 +120,7 @@ class _SyncPlayChatPanelState extends State<SyncPlayChatPanel> {
                 const Divider(height: 1),
                 // 消息列表
                 Expanded(
-                  child: _messages.isEmpty
+                  child: playerController.syncplayChatHistory.isEmpty
                       ? Center(
                           child: Text(
                             '聊天室为空，赶快说点什么吧～',
@@ -170,13 +132,12 @@ class _SyncPlayChatPanelState extends State<SyncPlayChatPanel> {
                       : ListView.builder(
                           controller: _scrollController,
                           padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          itemCount: _messages.length,
+                          itemCount: playerController.syncplayChatHistory.length,
                           itemBuilder: (context, index) {
-                            return _buildMessageItem(_messages[index]);
+                            return _buildMessageItem(playerController.syncplayChatHistory[index]);
                           },
                         ),
                 ),
-                // 输入框 + 发送
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
                   decoration: BoxDecoration(
@@ -198,7 +159,7 @@ class _SyncPlayChatPanelState extends State<SyncPlayChatPanel> {
                           maxLines: 4,
                           textCapitalization: TextCapitalization.sentences,
                           decoration: InputDecoration(
-                            hintText: '在一起看里发言（点"发送"按钮来发送评论）',
+                            hintText: '在一起看里发言',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: BorderSide.none,

@@ -16,7 +16,6 @@ import 'package:kazumi/utils/constants.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:kazumi/utils/storage.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
-import 'package:kazumi/pages/player/player_item_chat_panel.dart';
 
 class PlayerItemPanel extends StatefulWidget {
   const PlayerItemPanel({
@@ -42,6 +41,7 @@ class PlayerItemPanel extends StatefulWidget {
     required this.showVideoInfo,
     required this.showSyncPlayRoomCreateDialog,
     required this.showSyncPlayEndPointSwitchDialog,
+    required this.showSyncPlayChatPanel,
     this.disableAnimations = false,
   });
 
@@ -66,6 +66,7 @@ class PlayerItemPanel extends StatefulWidget {
   final void Function() showVideoInfo;
   final void Function() showSyncPlayRoomCreateDialog;
   final void Function() showSyncPlayEndPointSwitchDialog;
+  final void Function() showSyncPlayChatPanel;
   final bool disableAnimations;
 
   @override
@@ -1244,20 +1245,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                           ),
                           MenuItemButton(
                             onPressed: () {
-                              showModalBottomSheet(
-                                isScrollControlled: true,
-                                context: Modular.to.navigatorKey.currentContext ?? context,
-                                clipBehavior: Clip.antiAlias,
-                                builder: (context) {
-                                  return const SyncPlayChatPanel();
-                                },
-                                constraints: BoxConstraints(
-                                  maxHeight: MediaQuery.of(context).size.height * 0.9,
-                                  maxWidth: (Utils.isDesktop() || Utils.isTablet())
-                                      ? MediaQuery.of(context).size.width * 0.45
-                                      : MediaQuery.of(context).size.width,
-                                ),
-                              );
+                              widget.showSyncPlayChatPanel();
                             },
                             child: Container(
                               height: 48,

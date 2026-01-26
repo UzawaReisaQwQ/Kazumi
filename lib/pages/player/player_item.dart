@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
+import 'package:kazumi/pages/player/player_item_chat_panel.dart';
 import 'package:kazumi/pages/player/player_item_panel.dart';
 import 'package:kazumi/pages/player/smallest_player_item_panel.dart';
 import 'package:kazumi/utils/constants.dart';
@@ -1210,6 +1211,43 @@ class _PlayerItemState extends State<PlayerItem>
     });
   }
 
+  void showSyncPlayChatPanel() {
+      if (playerController.syncplayRoom.isEmpty) {
+        KazumiDialog.show(builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('未加入房间'),
+            content: const Text('你还没有加入一起看房间，无法打开聊天室'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  KazumiDialog.dismiss();
+                },
+                child: const Text('确定'),
+              ),
+            ],
+          );
+      });
+    return;
+    }
+
+    playerController.syncplayChatHistory.clear();
+
+    showModalBottomSheet(
+      isScrollControlled: true,
+      context: context,
+      clipBehavior: Clip.antiAlias,
+      builder: (context) {
+        return const SyncPlayChatPanel();
+      },
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
+        maxWidth: (Utils.isDesktop() || Utils.isTablet())
+            ? MediaQuery.of(context).size.width * 0.45
+            : MediaQuery.of(context).size.width,
+      ),
+    );
+  }
+
   /// Used to decide which panel is used.
   /// It's too complicated to write these in conditional sentence.
   /// * true: use [PlayerItemPanel]
@@ -1502,6 +1540,8 @@ class _PlayerItemState extends State<PlayerItem>
                                 showSyncPlayRoomCreateDialog,
                             showSyncPlayEndPointSwitchDialog:
                                 showSyncPlayEndPointSwitchDialog,
+                            showSyncPlayChatPanel:
+                                showSyncPlayChatPanel,
                             disableAnimations: widget.disableAnimations,
                             handleScreenShot: handleScreenshot,
                             skipOP: skipOP,
@@ -1527,6 +1567,8 @@ class _PlayerItemState extends State<PlayerItem>
                                 showSyncPlayRoomCreateDialog,
                             showSyncPlayEndPointSwitchDialog:
                                 showSyncPlayEndPointSwitchDialog,
+                            //showSyncPlayChatPanel:
+                            //    showSyncPlayChatPanel,
                             disableAnimations: widget.disableAnimations,
                             skipOP: skipOP,
                           ),

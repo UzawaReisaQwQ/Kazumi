@@ -734,6 +734,12 @@ abstract class _PlayerController with Store {
       syncplayController!.onChatMessage.listen(
         (message) {
           if (message['username'] != username) {
+            syncplayChatHistory.add({
+              'name': message['username'],
+              'message': message['message'],
+              'time': DateTime.now(),
+            });
+
             KazumiDialog.showToast(
                 message:
                     'SyncPlay: ${message['username']} 说: ${message['message']}',
