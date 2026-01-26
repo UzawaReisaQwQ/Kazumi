@@ -165,6 +165,9 @@ abstract class _PlayerController with Store {
   StreamSubscription<Track>? playerTracksSubscription;
   StreamSubscription<double?>? playerAudioBitrateSubscription;
 
+  // SyncPlay 聊天历史
+  final List<Map<String, dynamic>> syncplayChatHistory = [];
+
   Future<void> init(String url, {int offset = 0}) async {
     videoUrl = url;
     playing = false;

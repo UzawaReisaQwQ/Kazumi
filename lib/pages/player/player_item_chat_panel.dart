@@ -38,26 +38,15 @@ class _SyncPlayChatPanelState extends State<SyncPlayChatPanel> {
   void initState() {
     super.initState();
 
-    // 尝试从 playerController 读取历史（如果你的 controller 有字段请替换字段名）
-    // TODO: 若你的 PlayerController 中历史字段名不是 `syncplayChatHistory`，把下面逻辑替换为正确字段
-    try {
-      final dynamic maybeHistory = (playerController as dynamic).syncplayChatHistory;
-      if (maybeHistory is List) {
-        for (final item in maybeHistory) {
-          // 假设每个 item 有 name, message, time（若你存储格式不同，请替换）
-          if (item is Map) {
-            _messages.add(SyncPlayChatItem(
-              name: item['name']?.toString() ?? '用户',
-              message: item['message']?.toString() ?? '',
-              time: item['time'] is DateTime ? item['time'] : DateTime.now(),
-            ));
-          }
-        }
-      }
-    } catch (_) {
-      // 没有历史字段就从空开始
+    for (final item in playerController.syncplayChatHistory) {
+      _messages.add(SyncPlayChatItem(
+        name: item['name']?.toString() ?? '用户',
+        message: item['message']?.toString() ?? '',
+        time: item['time'] is DateTime ? item['time'] : DateTime.now(),
+      ));
     }
   }
+
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -83,7 +72,7 @@ class _SyncPlayChatPanelState extends State<SyncPlayChatPanel> {
     }
 
     // 尝试取当前用户名（如果 controller 有字段请替换）
-    String name = '我';
+    final name = playerController.syncplayUserName ?? '我';
     try {
       final dynamic maybeName = (playerController as dynamic).syncplayUserName;
       if (maybeName is String && maybeName.isNotEmpty) name = maybeName;
@@ -101,16 +90,11 @@ class _SyncPlayChatPanelState extends State<SyncPlayChatPanel> {
     });
 
     // 可选：同时也可以把它推回 controller 的历史里（若你希望共享历史）
-    try {
-      final dynamic history = (playerController as dynamic).syncplayChatHistory;
-      if (history is List) {
-        history.add({
-          'name': newItem.name,
-          'message': newItem.message,
-          'time': newItem.time,
-        });
-      }
-    } catch (_) {}
+    playerController.syncplayChatHistory.add({
+      'name': newItem.name,
+      'message': newItem.message,
+      'time': newItem.time,
+    });
 
     _scrollToBottom();
   }
