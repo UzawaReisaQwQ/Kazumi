@@ -169,6 +169,7 @@ abstract class _PlayerController with Store {
   // SyncPlay 聊天历史
   final List<Map<String, dynamic>> syncplayChatHistory = [];
 
+  // SyncPlay 聊天记录清空状态
   @observable
   bool syncplayChatHistoryClearedForCurrentRoom = false;
 
@@ -755,7 +756,8 @@ abstract class _PlayerController with Store {
               'message': message['message'],
               'time': DateTime.now(),
             });
-
+            
+            // 更新聊天室消息列表
             SyncPlayChatPanel.currentState?.notifyNewMessage();
 
             KazumiDialog.showToast(
