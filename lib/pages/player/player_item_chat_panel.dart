@@ -10,6 +10,8 @@ import 'package:intl/intl.dart';
 class SyncPlayChatPanel extends StatefulWidget {
   const SyncPlayChatPanel({super.key});
 
+  static _SyncPlayChatPanelState? currentState;
+
   @override
   State<SyncPlayChatPanel> createState() => _SyncPlayChatPanelState();
 }
@@ -23,6 +25,15 @@ class _SyncPlayChatPanelState extends State<SyncPlayChatPanel> {
   @override
   void initState() {
     super.initState();
+    SyncPlayChatPanel.currentState = this;
+  }
+
+  @override
+  void dispose() {
+    if (SyncPlayChatPanel.currentState == this) {
+      SyncPlayChatPanel.currentState = null;
+    }
+    super.dispose();
   }
 
   void _scrollToBottom() {
@@ -35,6 +46,12 @@ class _SyncPlayChatPanelState extends State<SyncPlayChatPanel> {
         );
       }
     });
+  }
+
+  void notifyNewMessage() {
+    if (!mounted) return;
+    setState(() {});
+    _scrollToBottom();
   }
 
   Future<void> _handleSend() async {

@@ -1230,7 +1230,11 @@ class _PlayerItemState extends State<PlayerItem>
     return;
     }
 
-    playerController.syncplayChatHistory.clear();
+    // 只在本次加入房间后第一次打开面板时清空历史
+    if (!playerController.syncplayChatHistoryClearedForCurrentRoom) {
+      playerController.syncplayChatHistory.clear();
+      playerController.syncplayChatHistoryClearedForCurrentRoom = true;
+    }
 
     showModalBottomSheet(
       isScrollControlled: true,

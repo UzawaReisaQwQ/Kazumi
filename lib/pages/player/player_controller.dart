@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
+import 'package:kazumi/pages/player/player_item_chat_panel.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:kazumi/modules/danmaku/danmaku_module.dart';
@@ -167,6 +168,9 @@ abstract class _PlayerController with Store {
 
   // SyncPlay 聊天历史
   final List<Map<String, dynamic>> syncplayChatHistory = [];
+
+  @observable
+  bool syncplayChatHistoryClearedForCurrentRoom = false;
 
   Future<void> init(String url, {int offset = 0}) async {
     videoUrl = url;
@@ -740,6 +744,8 @@ abstract class _PlayerController with Store {
               'time': DateTime.now(),
             });
 
+            SyncPlayChatPanel.currentState?.notifyNewMessage();
+
             KazumiDialog.showToast(
                 message:
                     'SyncPlay: ${message['username']} 说: ${message['message']}',
@@ -786,6 +792,7 @@ abstract class _PlayerController with Store {
         },
       );
       await syncplayController!.joinRoom(room, username);
+      syncplayChatHistoryClearedForCurrentRoom = false;
       syncplayRoom = room;
     } catch (e) {
       print('SyncPlay: error: $e');
@@ -838,5 +845,6 @@ abstract class _PlayerController with Store {
     syncplayController = null;
     syncplayRoom = '';
     syncplayClientRtt = 0;
+    syncplayChatHistoryClearedForCurrentRoom = false;
   }
 }
