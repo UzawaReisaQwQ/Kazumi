@@ -154,16 +154,19 @@ class _VideoPageState extends State<VideoPage>
         webviewLogLines.add(event);
       });
     });
-    _syncChatSubscription = playerController.syncPlayChatStream.listen((m) {
-      // 只有在弹幕开启时渲染
-      if (playerController.danmakuOn) {
+    _syncChatSubscription = playerController.syncPlayChatStream.listen((event) {
+      final localUsername = playerController.syncplayController?.username ?? '';
+      final String displayText = '【💬聊天室消息】${event.username}：${event.message}';
+
+      // 只有在弹幕开启时渲染弹幕并确保是别人发送的弹幕
+      if (playerController.danmakuOn && event.username != localUsername && !event.fromRemote) {
         playerController.danmakuController.addDanmaku(
           DanmakuContentItem(
-            '【💬聊天室消息】${m.username}：${m.message}',
+            displayText,
             color: Colors.orange,
             isColorful: true,
             type: DanmakuItemType.bottom,
-            extra: m.time.millisecondsSinceEpoch,
+            extra: event.time.millisecondsSinceEpoch,
           ),
         );
       }
@@ -340,7 +343,7 @@ class _VideoPageState extends State<VideoPage>
       }
 
       final sender = playerController.syncplayController?.username ?? '我';
-      final String displayText = '【💬 聊天室消息】$sender：$msg';
+      final String displayText = '【💬聊天室消息】$sender：$msg';
 
       // 在播放器渲染自己发送的弹幕
       playerController.danmakuController.addDanmaku(
@@ -384,36 +387,22 @@ class _VideoPageState extends State<VideoPage>
                     child: Container(
                       constraints: const BoxConstraints(maxHeight: 34),
                       child: TextField(
-                        style: const TextStyle(fontSize: 15, color: Colors.white),
+                        style: const TextStyle(fontSize: 15),
                         controller: textController,
                         autofocus: true,
                         textAlignVertical: TextAlignVertical.center,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           filled: true,
-                          fillColor: Colors.white38,
                           floatingLabelBehavior: FloatingLabelBehavior.never,
                           hintText: '发个友善的弹幕见证当下',
-                          hintStyle:
-                              const TextStyle(fontSize: 14, color: Colors.white60),
-                          contentPadding: const EdgeInsets.symmetric(
-                              vertical: 8, horizontal: 12),
-                          border: const OutlineInputBorder(
+                          hintStyle: TextStyle(fontSize: 14),
+                          alignLabelWithHint: true,
+                          contentPadding:
+                              EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                          border: OutlineInputBorder(
                             borderSide: BorderSide.none,
                             borderRadius: BorderRadius.all(Radius.circular(20)),
                           ),
-                          suffixIconConstraints: const BoxConstraints(minWidth: 0),
-                          suffixIcon: IconButton(
-                          onPressed: () {
-                            final msg = textController.text;
-                            Navigator.pop(context);
-                            showDanmakuDestinationPickerAndSend(msg);
-                            textController.clear();
-                          },
-                          icon: Icon(
-                            Icons.send_rounded,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
                         ),
                         onSubmitted: (msg) {
                           showDanmakuDestinationPickerAndSend(msg);
@@ -423,6 +412,18 @@ class _VideoPageState extends State<VideoPage>
                       ),
                     ),
                   ),
+                  IconButton(
+                    onPressed: () {
+                      final msg = textController.text;
+                      Navigator.pop(context);
+                      showDanmakuDestinationPickerAndSend(msg);
+                      textController.clear();
+                    },
+                    icon: Icon(
+                      Icons.send_rounded,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  )
                 ],
               ),
             );

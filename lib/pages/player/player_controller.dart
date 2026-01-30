@@ -542,9 +542,6 @@ abstract class _PlayerController with Store {
     try {
       await cancelPlayerDebugInfoSubscription();
     } catch (_) {}
-    try {
-      await syncPlayChatStreamController.close();
-    } catch (_) {}
     await mediaPlayer?.dispose();
     mediaPlayer = null;
     videoController = null;
@@ -776,11 +773,13 @@ abstract class _PlayerController with Store {
           final bool fromRemote = message['username'] != username;
 
           // 将消息转发到流
-          syncPlayChatStreamController.add(SyncPlayChatMessage(
-            username: sender,
-            message: text,
-            fromRemote: fromRemote,
-          ));
+          if (!syncPlayChatStreamController.isClosed) {
+            syncPlayChatStreamController.add(SyncPlayChatMessage(
+              username: sender,
+              message: text,
+              fromRemote: fromRemote,
+            ));
+          }
         },
         onError: (error) {
           print('SyncPlay: error: ${error.message}');
