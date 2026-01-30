@@ -119,24 +119,30 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
             borderRadius:
                 BorderRadius.all(Radius.circular(Utils.isDesktop() ? 8 : 20)),
           ),
-          suffixIcon: TextButton(
-            onPressed: () {
-              textFieldFocus.unfocus();
-              widget.sendDanmaku(textController.text);
-              textController.clear();
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: playerController.danmakuOn
-                  ? Theme.of(context).colorScheme.onPrimaryContainer
-                  : Colors.white60,
-              backgroundColor: playerController.danmakuOn
-                  ? Theme.of(context).colorScheme.primaryContainer
-                  : Theme.of(context).disabledColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(Utils.isDesktop() ? 8 : 20),
+          suffixIconConstraints: const BoxConstraints(minWidth: 0),
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton(
+                onPressed: () {
+                  textFieldFocus.unfocus();
+                  _showDanmakuDestinationPickerAndSend(textController.text);
+                  textController.clear();
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: playerController.danmakuOn
+                      ? Theme.of(context).colorScheme.onPrimaryContainer
+                      : Colors.white60,
+                  backgroundColor: playerController.danmakuOn
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : Theme.of(context).disabledColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(Utils.isDesktop() ? 8 : 20),
+                  ),
+                ),
+                child: const Text('发送'),
               ),
-            ),
-            child: const Text('发送'),
+            ],
           ),
         ),
         onTapAlwaysCalled: true,
@@ -146,7 +152,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
         },
         onSubmitted: (msg) {
           textFieldFocus.unfocus();
-          widget.sendDanmaku(msg);
+          _showDanmakuDestinationPickerAndSend(msg);
           widget.cancelHideTimer();
           widget.startHideTimer();
           playerController.canHidePlayerPanel = true;
@@ -161,6 +167,44 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
         },
       ),
     );
+  }
+
+  Future<void> _showDanmakuDestinationPickerAndSend(String msg) async {
+    if (msg.trim().isEmpty) {
+      KazumiDialog.showToast(message: '弹幕内容为空');
+      return;
+    }
+
+    final DanmakuDestination? result = await showModalBottomSheet<DanmakuDestination>(
+      context: context,
+      shape: const BeveledRectangleBorder(),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('发送到聊天室'),
+                onTap: () => Navigator.of(context).pop(DanmakuDestination.chatRoom),
+              ),
+              ListTile(
+                title: const Text('发送到远程弹幕库'),
+                onTap: () => Navigator.of(context).pop(DanmakuDestination.remoteDanmaku),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() {
+      });
+      playerController.danmakuDestination = result;
+      widget.sendDanmaku(msg);
+      textController.clear();
+    }
   }
 
   // 选择倍速
