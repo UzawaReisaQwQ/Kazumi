@@ -159,14 +159,14 @@ class _VideoPageState extends State<VideoPage>
       final String displayText = '【💬聊天室消息】${event.username}：${event.message}';
 
       // 只有在弹幕开启时渲染弹幕并确保是别人发送的弹幕
-      if (playerController.danmakuOn && event.username != localUsername && !event.fromRemote) {
+      if (playerController.danmakuOn && event.username != localUsername && event.fromRemote) {
         playerController.danmakuController.addDanmaku(
           DanmakuContentItem(
             displayText,
             color: Colors.orange,
             isColorful: true,
             type: DanmakuItemType.bottom,
-            extra: event.time.millisecondsSinceEpoch,
+            extra: DateTime.now().millisecondsSinceEpoch,
           ),
         );
       }
