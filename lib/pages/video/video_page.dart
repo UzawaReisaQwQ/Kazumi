@@ -159,7 +159,7 @@ class _VideoPageState extends State<VideoPage>
       if (playerController.danmakuOn) {
         playerController.danmakuController.addDanmaku(
           DanmakuContentItem(
-            '【💬 聊天室消息】${m.username}：${m.message}',
+            '【💬聊天室消息】${m.username}：${m.message}',
             color: Colors.orange,
             isColorful: true,
             type: DanmakuItemType.bottom,
