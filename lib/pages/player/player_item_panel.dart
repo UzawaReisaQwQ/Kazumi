@@ -186,10 +186,12 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                 title: const Text('发送到聊天室'),
                 onTap: () => Navigator.of(context).pop(DanmakuDestination.chatRoom),
               ),
               ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                 title: const Text('发送到远程弹幕库'),
                 onTap: () => Navigator.of(context).pop(DanmakuDestination.remoteDanmaku),
               ),
