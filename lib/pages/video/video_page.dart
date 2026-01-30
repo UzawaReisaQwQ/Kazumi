@@ -422,7 +422,9 @@ class _VideoPageState extends State<VideoPage>
       shape: const BeveledRectangleBorder(),
       builder: (context) {
         return SafeArea(
-          child: Column(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 0),
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
@@ -435,6 +437,7 @@ class _VideoPageState extends State<VideoPage>
               ),
             ],
           ),
+          )
         );
       },
     );

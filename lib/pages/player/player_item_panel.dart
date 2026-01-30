@@ -180,7 +180,9 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
       shape: const BeveledRectangleBorder(),
       builder: (context) {
         return SafeArea(
-          child: Column(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 0),
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
@@ -194,6 +196,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
               const SizedBox(height: 8),
             ],
           ),
+          )
         );
       },
     );
