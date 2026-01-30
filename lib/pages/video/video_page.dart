@@ -69,6 +69,9 @@ class _VideoPageState extends State<VideoPage>
   // disable animation.
   late final bool disableAnimations;
 
+  // SyncPlayChatMessage
+  late final StreamSubscription<SyncPlayChatMessage> _syncChatSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -151,6 +154,20 @@ class _VideoPageState extends State<VideoPage>
         webviewLogLines.add(event);
       });
     });
+    _syncChatSubscription = playerController.syncPlayChatStream.listen((m) {
+      // 只有在弹幕开启时渲染
+      if (playerController.danmakuOn) {
+        playerController.danmakuController.addDanmaku(
+          DanmakuContentItem(
+            '【💬 聊天室消息】${m.username}：${m.message}',
+            color: Colors.orange,
+            isColorful: true,
+            type: DanmakuItemType.bottom,
+            extra: m.time.millisecondsSinceEpoch,
+          ),
+        );
+      }
+    });
   }
 
   @override
@@ -175,6 +192,9 @@ class _VideoPageState extends State<VideoPage>
     } catch (_) {}
     try {
       _logSubscription.cancel();
+    } catch (_) {}
+    try {
+      _syncChatSubscription.cancel();
     } catch (_) {}
     try {
       playerController.dispose();
@@ -386,7 +406,7 @@ class _VideoPageState extends State<VideoPage>
                           onPressed: () {
                             final msg = textController.text;
                             Navigator.pop(context);
-                            _showDestinationPickerAndSendFromVideoPage(msg);
+                            showDanmakuDestinationPickerAndSend(msg);
                             textController.clear();
                           },
                           icon: Icon(
@@ -396,7 +416,7 @@ class _VideoPageState extends State<VideoPage>
                         ),
                         ),
                         onSubmitted: (msg) {
-                          _showDestinationPickerAndSendFromVideoPage(msg);
+                          showDanmakuDestinationPickerAndSend(msg);
                           textController.clear();
                           Navigator.pop(context);
                         },
@@ -412,11 +432,12 @@ class _VideoPageState extends State<VideoPage>
     );
   }
 
-  Future<void> _showDestinationPickerAndSendFromVideoPage(String msg) async {
+  void showDanmakuDestinationPickerAndSend(String msg) async {
     if (msg.trim().isEmpty) {
       KazumiDialog.showToast(message: '弹幕内容为空');
       return;
     }
+
     final DanmakuDestination? result = await showModalBottomSheet<DanmakuDestination>(
       context: context,
       shape: const BeveledRectangleBorder(),
@@ -435,6 +456,7 @@ class _VideoPageState extends State<VideoPage>
                 title: const Text('发送到远程弹幕库'),
                 onTap: () => Navigator.of(context).pop(DanmakuDestination.remoteDanmaku),
               ),
+              const SizedBox(height: 8),
             ],
           ),
         );
@@ -442,6 +464,8 @@ class _VideoPageState extends State<VideoPage>
     );
 
     if (result != null) {
+      setState(() {
+      });
       playerController.danmakuDestination = result;
       sendDanmaku(msg);
     }
@@ -733,6 +757,7 @@ class _VideoPageState extends State<VideoPage>
                   keyboardFocus: keyboardFocus,
                   sendDanmaku: sendDanmaku,
                   disableAnimations: disableAnimations,
+                  showDanmakuDestinationPickerAndSend: showDanmakuDestinationPickerAndSend,
                 ),
         ),
 
