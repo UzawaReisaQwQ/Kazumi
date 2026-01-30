@@ -423,11 +423,8 @@ class _VideoPageState extends State<VideoPage>
       builder: (context) {
         return SafeArea(
           left: false,
-          bottom: false,
           right: false,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 0),
-            child: Column(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
@@ -440,7 +437,6 @@ class _VideoPageState extends State<VideoPage>
               ),
             ],
           ),
-          )
         );
       },
     );

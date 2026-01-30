@@ -181,27 +181,21 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
       builder: (context) {
         return SafeArea(
           left: false,
-          bottom: false,
           right: false,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 0),
-            child: Column(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                 title: const Text('发送到聊天室'),
                 onTap: () => Navigator.of(context).pop(DanmakuDestination.chatRoom),
               ),
               ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                 title: const Text('发送到远程弹幕库'),
                 onTap: () => Navigator.of(context).pop(DanmakuDestination.remoteDanmaku),
               ),
               const SizedBox(height: 8),
             ],
           ),
-          )
         );
       },
     );
