@@ -1,14 +1,20 @@
 import UIKit
 import Flutter
 import AVKit
+import AVFoundation
+import MediaPlayer
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
+
+    private var player: AVPlayer?
 
     override func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
+        setupAudioSession()
+        setupRemoteCommandCenter()
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
 
@@ -31,6 +37,102 @@ import AVKit
             } else {
                 result(FlutterMethodNotImplemented)
             }
+        }
+    }
+
+    private func setupAudioSession() {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(.playback, mode: .moviePlayback)
+            try session.setActive(true)
+        } catch {
+            print("AudioSession error: \(error)")
+        }
+    }
+
+    private func setupRemoteCommandCenter() {
+        let center = MPRemoteCommandCenter.shared()
+
+        center.playCommand.addTarget { [weak self] _ in
+            self?.player?.play()
+            self?.updateNowPlaying(isPlaying: true)
+            return .success
+        }
+
+        center.pauseCommand.addTarget { [weak self] _ in
+            self?.player?.pause()
+            self?.updateNowPlaying(isPlaying: false)
+            return .success
+        }
+
+        center.togglePlayPauseCommand.addTarget { [weak self] _ in
+            guard let self else { return .commandFailed }
+            if self.player?.timeControlStatus == .playing {
+                self.player?.pause()
+                self.updateNowPlaying(isPlaying: false)
+            } else {
+                self.player?.play()
+                self.updateNowPlaying(isPlaying: true)
+            }
+            return .success
+        }
+
+        center.changePlaybackPositionCommand.addTarget { [weak self] event in
+            guard
+                let self,
+                let e = event as? MPChangePlaybackPositionCommandEvent
+            else { return .commandFailed }
+
+            let time = CMTime(seconds: e.positionTime, preferredTimescale: 1000)
+            self.player?.seek(to: time)
+            self.updateNowPlaying(isPlaying: true)
+            return .success
+        }
+    }
+
+    private func updateNowPlaying(isPlaying: Bool) {
+        guard let player else { return }
+
+        let duration = player.currentItem?.duration.seconds ?? 0
+        let current = player.currentTime().seconds
+
+        var info: [String: Any] = [
+            MPNowPlayingInfoPropertyElapsedPlaybackTime: current,
+            MPMediaItemPropertyPlaybackDuration: duration,
+            MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0,
+            MPMediaItemPropertyTitle: "Kazumi 播放中"
+        ]
+
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+    }
+
+    private func openVideoWithReferer(url: String, referer: String) {
+        guard let videoUrl = URL(string: url) else { return }
+
+        let headers: [String: String] = [
+            "Referer": referer,
+        ]
+
+        let asset = AVURLAsset(url: videoUrl, options: [
+            "AVURLAssetHTTPHeaderFieldsKey": headers
+        ])
+
+        let playerItem = AVPlayerItem(asset: asset)
+        let player = AVPlayer(playerItem: playerItem)
+        self.player = player
+
+        let playerViewController = AVPlayerViewController()
+        playerViewController.player = player
+        playerViewController.videoGravity = .resizeAspect
+
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let rootViewController = windowScene.windows.first?.rootViewController else {
+            return
+        }
+
+        rootViewController.present(playerViewController, animated: true) {
+            player.play()
+            self.updateNowPlaying(isPlaying: true)
         }
     }
     
