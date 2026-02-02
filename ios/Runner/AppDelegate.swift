@@ -127,7 +127,9 @@ import MediaPlayer
                         self?.updateNowPlayingInfo(args: args)
                     }
                     result(nil)
-
+                case "setupAudioSession":
+                    self?.setupAudioSession()
+                    result(nil)
                 default:
                     result(FlutterMethodNotImplemented)
                 }

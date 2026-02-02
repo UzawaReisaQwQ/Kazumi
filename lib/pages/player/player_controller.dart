@@ -542,6 +542,7 @@ abstract class _PlayerController with Store {
   }
 
   Future<void> play({bool enableSync = true}) async {
+    await mediaChannel.invokeMethod("setupAudioSession");
     danmakuController.resume();
     await mediaPlayer!.play();
     playing = true;
@@ -906,7 +907,7 @@ abstract class _PlayerController with Store {
   void setupIOSMediaChannel() {
     if (iosChannelReady) return;
     iosChannelReady = true;
-    
+
     mediaChannel.setMethodCallHandler((call) async {
       switch (call.method) {
         case "remote_play":
