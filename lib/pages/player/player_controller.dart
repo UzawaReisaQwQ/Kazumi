@@ -194,6 +194,8 @@ abstract class _PlayerController with Store {
   static const MethodChannel mediaChannel =
     MethodChannel('com.predidit.kazumi/intent');
 
+  bool iosChannelReady = false;
+
   Future<void> init(String url, {int offset = 0}) async {
     videoUrl = url;
     playing = false;
@@ -431,6 +433,11 @@ abstract class _PlayerController with Store {
 
     mediaPlayer!.stream.position.listen((event) {
       currentPosition = event;
+      updateIOSNowPlaying();
+    });
+
+    mediaPlayer!.stream.duration.listen((event) {
+      duration = event;
       updateIOSNowPlaying();
     });
 
@@ -897,6 +904,9 @@ abstract class _PlayerController with Store {
   }
 
   void setupIOSMediaChannel() {
+    if (iosChannelReady) return;
+    iosChannelReady = true;
+    
     mediaChannel.setMethodCallHandler((call) async {
       switch (call.method) {
         case "remote_play":

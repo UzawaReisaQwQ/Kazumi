@@ -13,6 +13,7 @@ import MediaPlayer
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
+        UIApplication.shared.beginReceivingRemoteControlEvents()
         setupAudioSession()
         setupRemoteCommands()
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
@@ -21,7 +22,7 @@ import MediaPlayer
     private func setupAudioSession() {
         let session = AVAudioSession.sharedInstance()
         do {
-            try session.setCategory(.playback, mode: .moviePlayback, options: [])
+            try session.setCategory(.playback, mode: .moviePlayback, options: [.allowAirPlay, .allowBluetooth])
             try session.setActive(true)
         } catch {
             print("Failed to set audio session category: \(error)")
@@ -97,7 +98,11 @@ import MediaPlayer
             nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = playing ? 1.0 : 0.0
         }
 
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+        let center = MPNowPlayingInfoCenter.default()
+        center.nowPlayingInfo = nowPlayingInfo
+        center.playbackState = (nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] as? Double ?? 0) > 0
+            ? .playing
+            : .paused
     }
 
     func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
