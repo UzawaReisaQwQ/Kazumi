@@ -52,17 +52,17 @@ import MediaPlayer
         let commandCenter = MPRemoteCommandCenter.shared()
 
         commandCenter.playCommand.addTarget { [weak self] event in
-            self?.channel?.invokeMethod("remote_play", arguments: nil)
+            self?.mediaChannel?.invokeMethod("remote_play", arguments: nil)
             return .success
         }
 
         commandCenter.pauseCommand.addTarget { [weak self] event in
-            self?.channel?.invokeMethod("remote_pause", arguments: nil)
+            self?.mediaChannel?.invokeMethod("remote_pause", arguments: nil)
             return .success
         }
 
         commandCenter.togglePlayPauseCommand.addTarget { [weak self] event in
-            self?.channel?.invokeMethod("remote_togglePlayPause", arguments: nil)
+            self?.mediaChannel?.invokeMethod("remote_togglePlayPause", arguments: nil)
             return .success
         }
 
@@ -103,11 +103,11 @@ import MediaPlayer
     func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
         GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
 
-        let channel = FlutterMethodChannel(
+        self.mediaChannel = FlutterMethodChannel(
             name: "com.predidit.kazumi/intent",
             binaryMessenger: engineBridge.applicationRegistrar.messenger()
         )
-        channel.setMethodCallHandler { [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
+        mediaChannel.setMethodCallHandler { [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
             switch call.method {
                 case "openWithReferer":
                     if let myArgs = call.arguments as? [String: Any],
