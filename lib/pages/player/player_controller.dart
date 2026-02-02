@@ -505,6 +505,7 @@ abstract class _PlayerController with Store {
     currentPosition = duration;
     danmakuController.clear();
     await mediaPlayer!.seek(duration);
+    updateNowPlaying();
     if (syncplayController != null) {
       setSyncPlayCurrentPosition();
       if (enableSync) {
@@ -517,6 +518,7 @@ abstract class _PlayerController with Store {
     danmakuController.pause();
     await mediaPlayer!.pause();
     playing = false;
+    updateNowPlaying();
     if (syncplayController != null) {
       setSyncPlayCurrentPosition();
       if (enableSync) {
@@ -529,6 +531,7 @@ abstract class _PlayerController with Store {
     danmakuController.resume();
     await mediaPlayer!.play();
     playing = true;
+    updateNowPlaying();
     if (syncplayController != null) {
       setSyncPlayCurrentPosition();
       if (enableSync) {

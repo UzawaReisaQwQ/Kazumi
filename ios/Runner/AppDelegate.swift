@@ -2,6 +2,7 @@ import UIKit
 import Flutter
 import AVKit
 import MediaPlayer
+import AVFoundation
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
@@ -10,7 +11,23 @@ import MediaPlayer
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
+        setupAudioSession()
+        becomeFirstResponder()
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    }
+
+    override func applicationDidBecomeActive(_ application: UIApplication) {
+        application.beginReceivingRemoteControlEvents()
+    }
+
+    override var canBecomeFirstResponder: Bool {
+        return true
+    }
+
+    func setupAudioSession() {
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.playback, mode: .moviePlayback, options: [])
+        try? session.setActive(true)
     }
 
     func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
@@ -59,6 +76,7 @@ import MediaPlayer
     }
 
     func updateNowPlayingInfo(title: String, duration: Double, position: Double, isPlaying: Bool) {
+        DispatchQueue.main.async {
             var nowPlayingInfo: [String: Any] = [
                 MPMediaItemPropertyTitle: title,
                 MPMediaItemPropertyPlaybackDuration: duration,
@@ -68,25 +86,32 @@ import MediaPlayer
 
             MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
         }
+    }
 
-        func setupRemoteCommandCenter(playCallback: @escaping () -> Void,
+    func setupRemoteCommandCenter(playCallback: @escaping () -> Void,
                                 pauseCallback: @escaping () -> Void,
                                 seekCallback: @escaping (Double) -> Void) {
+
         let commandCenter = MPRemoteCommandCenter.shared()
-        
+
+        commandCenter.playCommand.removeTarget(nil)
+        commandCenter.pauseCommand.removeTarget(nil)
+        commandCenter.changePlaybackPositionCommand.removeTarget(nil)
+
         commandCenter.playCommand.isEnabled = true
+        commandCenter.pauseCommand.isEnabled = true
+        commandCenter.changePlaybackPositionCommand.isEnabled = true
+
         commandCenter.playCommand.addTarget { _ in
             playCallback()
             return .success
         }
-        
-        commandCenter.pauseCommand.isEnabled = true
+
         commandCenter.pauseCommand.addTarget { _ in
             pauseCallback()
             return .success
         }
-        
-        commandCenter.changePlaybackPositionCommand.isEnabled = true
+
         commandCenter.changePlaybackPositionCommand.addTarget { event in
             if let positionEvent = event as? MPChangePlaybackPositionCommandEvent {
                 seekCallback(positionEvent.positionTime)
@@ -95,7 +120,7 @@ import MediaPlayer
             return .commandFailed
         }
     }
-    
+
     // TODO: ADD VLC SUPPORT
     // VLC can be downloaded from iOS App Store, but don't know how to build selectable app lists, while checking if it is installled.
     // VLC supports more video formats than AVPlayer but does not support referer while AVPlayer does
