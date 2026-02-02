@@ -107,7 +107,7 @@ import MediaPlayer
             name: "com.predidit.kazumi/intent",
             binaryMessenger: engineBridge.applicationRegistrar.messenger()
         )
-        mediaChannel.setMethodCallHandler { [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
+        mediaChannel?.setMethodCallHandler { [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
             switch call.method {
                 case "openWithReferer":
                     if let myArgs = call.arguments as? [String: Any],
