@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
+import 'package:flutter/services.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -190,6 +191,9 @@ abstract class _PlayerController with Store {
   StreamSubscription<Track>? playerTracksSubscription;
   StreamSubscription<double?>? playerAudioBitrateSubscription;
 
+  static const MethodChannel mediaChannel =
+    MethodChannel('com.predidit.kazumi/intent');
+
   Future<void> init(String url, {int offset = 0}) async {
     videoUrl = url;
     playing = false;
@@ -227,6 +231,10 @@ abstract class _PlayerController with Store {
         videoPageController.bangumiItem.id, episodeFromTitle);
     mediaPlayer ??= await createVideoController(offset: offset);
 
+    if (Platform.isIOS) {
+      setupIOSMediaChannel();
+    }
+
     if (Utils.isDesktop()) {
       volume = volume != -1 ? volume : 100;
       await setVolume(volume);
@@ -240,6 +248,7 @@ abstract class _PlayerController with Store {
     setPlaybackSpeed(playerSpeed);
     KazumiLogger().i('PlayerController: video initialized');
     loading = false;
+    await updateIOSNowPlaying();
     if (syncplayController?.isConnected ?? false) {
       if (syncplayController!.currentFileName !=
           "${videoPageController.bangumiItem.id}[${videoPageController.currentEpisode}]") {
@@ -420,6 +429,11 @@ abstract class _PlayerController with Store {
       play: autoPlay,
     );
 
+    mediaPlayer!.stream.position.listen((event) {
+      currentPosition = event;
+      updateIOSNowPlaying();
+    });
+
     return mediaPlayer!;
   }
 
@@ -498,6 +512,7 @@ abstract class _PlayerController with Store {
     currentPosition = duration;
     danmakuController.clear();
     await mediaPlayer!.seek(duration);
+    await updateIOSNowPlaying();
     if (syncplayController != null) {
       setSyncPlayCurrentPosition();
       if (enableSync) {
@@ -510,6 +525,7 @@ abstract class _PlayerController with Store {
     danmakuController.pause();
     await mediaPlayer!.pause();
     playing = false;
+    await updateIOSNowPlaying();
     if (syncplayController != null) {
       setSyncPlayCurrentPosition();
       if (enableSync) {
@@ -522,6 +538,7 @@ abstract class _PlayerController with Store {
     danmakuController.resume();
     await mediaPlayer!.play();
     playing = true;
+    await updateIOSNowPlaying();
     if (syncplayController != null) {
       setSyncPlayCurrentPosition();
       if (enableSync) {
@@ -877,5 +894,47 @@ abstract class _PlayerController with Store {
     syncplayController = null;
     syncplayRoom = '';
     syncplayClientRtt = 0;
+  }
+
+  void setupIOSMediaChannel() {
+    mediaChannel.setMethodCallHandler((call) async {
+      switch (call.method) {
+        case "remote_play":
+          await play();
+          break;
+
+        case "remote_pause":
+          await pause();
+          break;
+
+        case "remote_togglePlayPause":
+          await playOrPause();
+          break;
+
+        case "remote_seek":
+          final pos = call.arguments["position"] as double;
+          await seek(Duration(milliseconds: (pos * 1000).toInt()));
+          break;
+
+        case "audio_interruption_began":
+          await pause(enableSync: false);
+          break;
+
+        case "audio_interruption_ended":
+          await play();
+          break;
+      }
+    });
+  }
+
+  Future<void> updateIOSNowPlaying() async {
+    if (!Platform.isIOS) return;
+
+    await mediaChannel.invokeMethod("updateNowPlaying", {
+      "title": videoPageController.bangumiItem.name,
+      "duration": duration.inSeconds.toDouble(),
+      "position": currentPosition.inSeconds.toDouble(),
+      "playing": playing,
+    });
   }
 }
