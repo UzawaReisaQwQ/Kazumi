@@ -1,119 +1,50 @@
 import UIKit
 import Flutter
 import AVKit
-import AVFoundation
 import MediaPlayer
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
 
-    private var mediaChannel: FlutterMethodChannel?
-
     override func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
-        UIApplication.shared.beginReceivingRemoteControlEvents()
-        setupAudioSession()
-        setupRemoteCommands()
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
-    }
-
-    private func setupAudioSession() {
-        let session = AVAudioSession.sharedInstance()
-        do {
-            try session.setCategory(.playback, mode: .moviePlayback, options: [.allowAirPlay, .allowBluetooth])
-            try session.setActive(true)
-        } catch {
-            print("Failed to set audio session category: \(error)")
-        }
-
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleInterruption),
-            name: AVAudioSession.interruptionNotification,
-            object: session
-        )
-    }
-
-    @objc private func handleInterruption(notification: Notification) {
-        guard let userInfo = notification.userInfo,
-              let typeRaw = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
-              let type = AVAudioSession.InterruptionType(rawValue: typeRaw)
-        else { return }
-
-        if type == .began {
-            mediaChannel?.invokeMethod("audio_interruption_began", arguments: nil)
-        } else if type == .ended {
-            mediaChannel?.invokeMethod("audio_interruption_ended", arguments: nil)
-        }
-    }
-
-    private func setupRemoteCommands() {
-        let commandCenter = MPRemoteCommandCenter.shared()
-
-        commandCenter.playCommand.addTarget { [weak self] event in
-            self?.mediaChannel?.invokeMethod("remote_play", arguments: nil)
-            return .success
-        }
-
-        commandCenter.pauseCommand.addTarget { [weak self] event in
-            self?.mediaChannel?.invokeMethod("remote_pause", arguments: nil)
-            return .success
-        }
-
-        commandCenter.togglePlayPauseCommand.addTarget { [weak self] event in
-            self?.mediaChannel?.invokeMethod("remote_togglePlayPause", arguments: nil)
-            return .success
-        }
-
-        commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
-            if let e = event as? MPChangePlaybackPositionCommandEvent {
-                self?.mediaChannel?.invokeMethod(
-                    "remote_seek",
-                    arguments: ["position": e.positionTime]
-                )
-                return .success
-            }
-            return .commandFailed
-        }
-    }
-
-    private func updateNowPlayingInfo(args: [String: Any]) {
-        var nowPlayingInfo = [String: Any]()
-
-        if let title = args["title"] as? String {
-            nowPlayingInfo[MPMediaItemPropertyTitle] = title
-        }
-
-        if let duration = args["duration"] as? Double {
-            nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = duration
-        }
-
-        if let position = args["position"] as? Double {
-            nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = position
-        }
-
-        if let playing = args["playing"] as? Bool {
-            nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = playing ? 1.0 : 0.0
-        }
-
-        let center = MPNowPlayingInfoCenter.default()
-        center.nowPlayingInfo = nowPlayingInfo
-        center.playbackState = (nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] as? Double ?? 0) > 0
-            ? .playing
-            : .paused
     }
 
     func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
         GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
 
-        self.mediaChannel = FlutterMethodChannel(
+        let channel = FlutterMethodChannel(
             name: "com.predidit.kazumi/intent",
             binaryMessenger: engineBridge.applicationRegistrar.messenger()
         )
-        mediaChannel?.setMethodCallHandler { [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
+        channel.setMethodCallHandler { [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
             switch call.method {
+                case "updateNowPlaying":
+                    if let args = call.arguments as? [String: Any],
+                    let title = args["title"] as? String,
+                    let duration = args["duration"] as? Double,
+                    let position = args["position"] as? Double,
+                    let isPlaying = args["isPlaying"] as? Bool {
+                        self?.updateNowPlayingInfo(title: title, duration: duration, position: position, isPlaying: isPlaying)
+                    }
+                    result(nil)
+                    
+                case "setupRemoteCommands":
+                    self?.setupRemoteCommandCenter(
+                        playCallback: {
+                            channel.invokeMethod("remotePlay", arguments: nil)
+                        },
+                        pauseCallback: {
+                            channel.invokeMethod("remotePause", arguments: nil)
+                        },
+                        seekCallback: { position in
+                            channel.invokeMethod("remoteSeek", arguments: position)
+                        }
+                    )
+                    result(nil)
                 case "openWithReferer":
                     if let myArgs = call.arguments as? [String: Any],
                         let url = myArgs["url"] as? String,
@@ -121,18 +52,47 @@ import MediaPlayer
                             self?.openVideoWithReferer(url: url, referer: referer)
                     }
                     result(nil)
-
-                case "updateNowPlaying":
-                    if let args = call.arguments as? [String: Any] {
-                        self?.updateNowPlayingInfo(args: args)
-                    }
-                    result(nil)
-                case "setupAudioSession":
-                    self?.setupAudioSession()
-                    result(nil)
                 default:
                     result(FlutterMethodNotImplemented)
-                }
+            }
+        }
+    }
+
+    func updateNowPlayingInfo(title: String, duration: Double, position: Double, isPlaying: Bool) {
+            var nowPlayingInfo: [String: Any] = [
+                MPMediaItemPropertyTitle: title,
+                MPMediaItemPropertyPlaybackDuration: duration,
+                MPNowPlayingInfoPropertyElapsedPlaybackTime: position,
+                MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0
+            ]
+
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+        }
+
+        func setupRemoteCommandCenter(playCallback: @escaping () -> Void,
+                                pauseCallback: @escaping () -> Void,
+                                seekCallback: @escaping (Double) -> Void) {
+        let commandCenter = MPRemoteCommandCenter.shared()
+        
+        commandCenter.playCommand.isEnabled = true
+        commandCenter.playCommand.addTarget { _ in
+            playCallback()
+            return .success
+        }
+        
+        commandCenter.pauseCommand.isEnabled = true
+        commandCenter.pauseCommand.addTarget { _ in
+            pauseCallback()
+            return .success
+        }
+        
+        commandCenter.changePlaybackPositionCommand.isEnabled = true
+        commandCenter.changePlaybackPositionCommand.addTarget { event in
+            if let positionEvent = event as? MPChangePlaybackPositionCommandEvent {
+                seekCallback(positionEvent.positionTime)
+                return .success
+            }
+            return .commandFailed
         }
     }
     
