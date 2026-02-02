@@ -7,15 +7,97 @@ import MediaPlayer
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
 
-    private var player: AVPlayer?
+    private var mediaChannel: FlutterMethodChannel?
 
     override func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
         setupAudioSession()
-        setupRemoteCommandCenter()
+        setupRemoteCommands()
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    }
+
+    private func setupAudioSession() {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(.playback, mode: .moviePlayback, options: [])
+            try session.setActive(true)
+        } catch {
+            print("Failed to set audio session category: \(error)")
+        }
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleInterruption),
+            name: AVAudioSession.interruptionNotification,
+            object: session
+        )
+    }
+
+    @objc private func handleInterruption(notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let typeRaw = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeRaw)
+        else { return }
+
+        if type == .began {
+            mediaChannel?.invokeMethod("audio_interruption_began", arguments: nil)
+        } else if type == .ended {
+            mediaChannel?.invokeMethod("audio_interruption_ended", arguments: nil)
+        }
+    }
+
+    private func setupRemoteCommands() {
+        let commandCenter = MPRemoteCommandCenter.shared()
+
+        commandCenter.playCommand.addTarget { [weak self] event in
+            self?.channel?.invokeMethod("remote_play", arguments: nil)
+            return .success
+        }
+
+        commandCenter.pauseCommand.addTarget { [weak self] event in
+            self?.channel?.invokeMethod("remote_pause", arguments: nil)
+            return .success
+        }
+
+        commandCenter.togglePlayPauseCommand.addTarget { [weak self] event in
+            self?.channel?.invokeMethod("remote_togglePlayPause", arguments: nil)
+            return .success
+        }
+
+        commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
+            if let e = event as? MPChangePlaybackPositionCommandEvent {
+                self?.mediaChannel?.invokeMethod(
+                    "remote_seek",
+                    arguments: ["position": e.positionTime]
+                )
+                return .success
+            }
+            return .commandFailed
+        }
+    }
+
+    private func updateNowPlayingInfo(args: [String: Any]) {
+        var nowPlayingInfo = [String: Any]()
+
+        if let title = args["title"] as? String {
+            nowPlayingInfo[MPMediaItemPropertyTitle] = title
+        }
+
+        if let duration = args["duration"] as? Double {
+            nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = duration
+        }
+
+        if let position = args["position"] as? Double {
+            nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = position
+        }
+
+        if let playing = args["playing"] as? Bool {
+            nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = playing ? 1.0 : 0.0
+        }
+
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
     }
 
     func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
@@ -26,113 +108,24 @@ import MediaPlayer
             binaryMessenger: engineBridge.applicationRegistrar.messenger()
         )
         channel.setMethodCallHandler { [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
-            if call.method == "openWithReferer" {
-                guard let args = call.arguments else { return }
-                if let myArgs = args as? [String: Any],
-                   let url = myArgs["url"] as? String,
-                   let referer = myArgs["referer"] as? String {
-                    self?.openVideoWithReferer(url: url, referer: referer)
+            switch call.method {
+                case "openWithReferer":
+                    if let myArgs = call.arguments as? [String: Any],
+                        let url = myArgs["url"] as? String,
+                        let referer = myArgs["referer"] as? String {
+                            self?.openVideoWithReferer(url: url, referer: referer)
+                    }
+                    result(nil)
+
+                case "updateNowPlaying":
+                    if let args = call.arguments as? [String: Any] {
+                        self?.updateNowPlayingInfo(args: args)
+                    }
+                    result(nil)
+
+                default:
+                    result(FlutterMethodNotImplemented)
                 }
-                result(nil)
-            } else {
-                result(FlutterMethodNotImplemented)
-            }
-        }
-    }
-
-    private func setupAudioSession() {
-        let session = AVAudioSession.sharedInstance()
-        do {
-            try session.setCategory(.playback, mode: .moviePlayback)
-            try session.setActive(true)
-        } catch {
-            print("AudioSession error: \(error)")
-        }
-    }
-
-    private func setupRemoteCommandCenter() {
-        let center = MPRemoteCommandCenter.shared()
-
-        center.playCommand.addTarget { [weak self] _ in
-            self?.player?.play()
-            self?.updateNowPlaying(isPlaying: true)
-            return .success
-        }
-
-        center.pauseCommand.addTarget { [weak self] _ in
-            self?.player?.pause()
-            self?.updateNowPlaying(isPlaying: false)
-            return .success
-        }
-
-        center.togglePlayPauseCommand.addTarget { [weak self] _ in
-            guard let self else { return .commandFailed }
-            if self.player?.timeControlStatus == .playing {
-                self.player?.pause()
-                self.updateNowPlaying(isPlaying: false)
-            } else {
-                self.player?.play()
-                self.updateNowPlaying(isPlaying: true)
-            }
-            return .success
-        }
-
-        center.changePlaybackPositionCommand.addTarget { [weak self] event in
-            guard
-                let self,
-                let e = event as? MPChangePlaybackPositionCommandEvent
-            else { return .commandFailed }
-
-            let time = CMTime(seconds: e.positionTime, preferredTimescale: 1000)
-            self.player?.seek(to: time)
-            self.updateNowPlaying(isPlaying: true)
-            return .success
-        }
-    }
-
-    private func updateNowPlaying(isPlaying: Bool) {
-        guard let player else { return }
-
-        let duration = player.currentItem?.duration.seconds ?? 0
-        let current = player.currentTime().seconds
-
-        var info: [String: Any] = [
-            MPNowPlayingInfoPropertyElapsedPlaybackTime: current,
-            MPMediaItemPropertyPlaybackDuration: duration,
-            MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0,
-            MPMediaItemPropertyTitle: "Kazumi 播放中"
-        ]
-
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
-    }
-
-    private func openVideoWithReferer(url: String, referer: String) {
-        guard let videoUrl = URL(string: url) else { return }
-
-        let headers: [String: String] = [
-            "Referer": referer,
-        ]
-
-        let asset = AVURLAsset(url: videoUrl, options: [
-            "AVURLAssetHTTPHeaderFieldsKey": headers
-        ])
-
-        let playerItem = AVPlayerItem(asset: asset)
-        let player = AVPlayer(playerItem: playerItem)
-        self.player = player
-
-        let playerViewController = AVPlayerViewController()
-        playerViewController.player = player
-        playerViewController.videoGravity = .resizeAspect
-
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let rootViewController = windowScene.windows.first?.rootViewController else {
-            return
-        }
-
-        rootViewController.present(playerViewController, animated: true) {
-            player.play()
-            self.updateNowPlaying(isPlaying: true)
         }
     }
     
