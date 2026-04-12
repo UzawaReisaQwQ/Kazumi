@@ -308,6 +308,7 @@ class _PlayerItemState extends State<PlayerItem>
     final identifier =
         videoPageController.roadList[currentRoad].identifier[targetEpisode - 1];
     KazumiDialog.showToast(message: '正在加载$identifier');
+    await _uploadHistoryToWebDav();
     widget.changeEpisode(targetEpisode, currentRoad: currentRoad);
   }
 
@@ -387,6 +388,7 @@ class _PlayerItemState extends State<PlayerItem>
   void _handleTap() {
     if (Utils.isDesktop()) {
       playerController.playOrPause();
+      _uploadHistoryToWebDav();
     } else {
       if (playerController.showVideoController) {
         hideVideoController();
@@ -401,6 +403,7 @@ class _PlayerItemState extends State<PlayerItem>
       handleFullscreen();
     } else {
       playerController.playOrPause();
+      _uploadHistoryToWebDav();
     }
   }
 
@@ -895,6 +898,7 @@ class _PlayerItemState extends State<PlayerItem>
                   .roadList[videoPageController.currentRoad].data.length &&
           !videoPageController.loading &&
           autoPlayNext) {
+        _uploadHistoryToWebDav();
         KazumiDialog.showToast(
             message:
                 '正在加载${videoPageController.roadList[videoPageController.currentRoad].identifier[videoPageController.currentEpisode]}');
