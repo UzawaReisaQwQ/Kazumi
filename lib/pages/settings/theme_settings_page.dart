@@ -32,6 +32,7 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
   late bool useDynamicColor;
   late bool showWindowButton;
   late bool useSystemFont;
+  late double uiScale;
   final PopularController popularController = Modular.get<PopularController>();
   late final ThemeProvider themeProvider;
   final MenuController menuController = MenuController();
@@ -51,6 +52,7 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
     useSystemFont =
         setting.get(SettingBoxKey.useSystemFont, defaultValue: false);
     themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    uiScale = setting.get(SettingBoxKey.uiScale, defaultValue: 1.0);
   }
 
   void onBackPressed(BuildContext context) {
@@ -141,6 +143,13 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
       color = Color(int.parse(defaultThemeColor, radix: 16));
     }
     setTheme(color);
+  }
+
+  void updateUiScale(double value) async {
+    uiScale = value;
+    await setting.put(SettingBoxKey.uiScale, value);
+    themeProvider.setUiScale(value);
+    setState(() {});
   }
 
   @override
@@ -360,6 +369,33 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
                   description: Text('关闭后使用 MI Sans 字体',
                       style: TextStyle(fontFamily: fontFamily)),
                   initialValue: useSystemFont,
+                ),
+                SettingsTile(
+                  title: Text('界面缩放', style: TextStyle(fontFamily: fontFamily)),
+                  description: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Slider(
+                        value: uiScale,
+                        min: 0.75,
+                        max: 1.25,
+                        divisions: 10,
+                        label: "${(uiScale * 100).round()}%",
+                        onChanged: (value) {
+                          setState(() {
+                            uiScale = value;
+                          });
+                        },
+                        onChangeEnd: (value) {
+                          updateUiScale(value);
+                        },
+                      ),
+                      Text(
+                        '当前缩放：${(uiScale * 100).round()}%',
+                        style: TextStyle(fontFamily: fontFamily),
+                      ),
+                    ],
+                  ),
                 ),
               ],
               bottomInfo: Text('动态配色仅支持安卓12及以上和桌面平台',

@@ -404,6 +404,7 @@ class SettingBoxKey {
       timelineNotShowWatchedBangumis = 'timelineNotShowWatchedBangumis',
       timelineOnlyShowWatchingBangumis = 'timelineOnlyShowWatchingBangumis',
       useSystemFont = 'useSystemFont',
+      uiScale = 'uiScale',
       forceAdBlocker = 'forceAdBlocker',
       backgroundPlayback = 'backgroundPlayback',
       proxyEnable = 'proxyEnable',

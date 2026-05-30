@@ -8,6 +8,8 @@ class ThemeProvider extends ChangeNotifier {
   late ThemeData light;
   late ThemeData dark;
   String? currentFontFamily = customAppFontFamily;
+  double _uiScale = 1.0;
+  double get uiScale => _uiScale;
 
   /// Returns true if the effective theme is dark mode.
   /// Automatically gets platform brightness when themeMode is ThemeMode.system.
@@ -37,6 +39,11 @@ class ThemeProvider extends ChangeNotifier {
 
   void setFontFamily(bool useSystemFont, {bool notify = true}) {
     currentFontFamily = useSystemFont ? null : customAppFontFamily;
+    if (notify) notifyListeners();
+  }
+
+  void setUiScale(double scale, {bool notify = true}) {
+    _uiScale = scale;
     if (notify) notifyListeners();
   }
 }

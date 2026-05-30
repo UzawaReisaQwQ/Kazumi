@@ -102,6 +102,10 @@ class _AppWidgetState extends State<AppWidget>
       setting.get(SettingBoxKey.useSystemFont, defaultValue: false),
       notify: false,
     );
+    themeProvider.setUiScale(
+      setting.get(SettingBoxKey.uiScale, defaultValue: 1.0),
+      notify: false,
+    );
 
     final color = _storedThemeColor();
     final oledEnhance =
@@ -352,6 +356,16 @@ class _AppWidgetState extends State<AppWidget>
           ],
           locale: const Locale.fromSubtags(
               languageCode: 'zh', scriptCode: 'Hans', countryCode: "CN"),
+          builder: (context, child) {
+            final media = MediaQuery.of(context);
+            final scale = themeProvider.uiScale;
+            return MediaQuery(
+              data: media.copyWith(
+                textScaler: TextScaler.linear(scale),
+              ),
+              child: child!,
+            );
+          },
           theme: lightTheme,
           darkTheme: effectiveDarkTheme,
           themeMode: themeProvider.themeMode,
