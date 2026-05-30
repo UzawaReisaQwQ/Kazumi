@@ -362,6 +362,8 @@ class _AppWidgetState extends State<AppWidget>
             return MediaQuery(
               data: media.copyWith(
                 textScaler: TextScaler.linear(scale),
+                size: media.size * scale,
+                devicePixelRatio: media.devicePixelRatio * scale,
               ),
               child: child!,
             );
