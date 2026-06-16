@@ -345,6 +345,26 @@ class _CollectPageState extends State<CollectPage>
                 ),
               ),
             ),
+
+            if (collectedBangumiRenderItem.isNotEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12, bottom: 12),
+                      child: Text(
+                        '总计：${collectedBangumiRenderItem.length}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+              ),
+            ),
           ],
         ),
       );
