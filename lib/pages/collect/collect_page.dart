@@ -346,7 +346,7 @@ class _CollectPageState extends State<CollectPage>
               ),
             ),
 
-            if (collectedBangumiRenderItem.isNotEmpty)
+            if (showDelete && collectedBangumiRenderItem.isNotEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: Column(
