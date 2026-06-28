@@ -254,7 +254,7 @@ class _VideoPageState extends State<VideoPage>
     }
     videoPageController.resetEpisodeComments();
     videoPageController.resetOfflineMode();
-    DisplayModeService.unlockScreenRotation();
+    //DisplayModeService.unlockScreenRotation();
     keyboardFocus.dispose();
     tabController.dispose();
     TimedShutdownService().cancel();
